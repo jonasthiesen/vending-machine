@@ -15,7 +15,7 @@ MCUFRIEND_kbv tft;
 File root;
 char namebuf[32] = "payment.bmp";
 int pathlen;
-uint8_t         spi_save;
+uint8_t spi_save;
 uint8_t YP = A1;  // must be an analog pin, use "An" notation!
 uint8_t XM = A2;  // must be an analog pin, use "An" notation!
 uint8_t YM = 7;   // can be a digital pin
