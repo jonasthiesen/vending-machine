@@ -13,7 +13,7 @@ MCUFRIEND_kbv tft;
 #endif
 
 File root;
-char namebuf[32] = "payment.bmp";
+char namebuf[32] = "select.bmp";
 int pathlen;
 uint8_t spi_save;
 uint8_t YP = A1;  // must be an analog pin, use "An" notation!
@@ -34,7 +34,7 @@ TSPoint tp;
 #define MINPRESSURE 20
 #define MAXPRESSURE 1000
 
-#define SWAP(a, b) {uint16_t tmp = a; a = b; b = tmp;}
+#define SWAP(a, b) { uint16_t tmp = a; a = b; b = tmp; }
 
 int16_t BOXSIZE;
 int16_t PENRADIUS = 3;
@@ -44,14 +44,14 @@ uint8_t Orientation = 0;    //PORTRAIT
 int mode = 1;
 int selection;
 
+uint16_t ID;
+uint16_t tmp;
+
 void setup() {
   pinMode(XM, OUTPUT);
   pinMode(YP, OUTPUT);
   pinMode(XP, OUTPUT);
   pinMode(YM, OUTPUT);
-  
-  uint16_t ID;
-  uint16_t tmp;
   
   Serial.begin(9600);
   Serial.print("Show BMP files on TFT with ID:0x");
@@ -71,7 +71,7 @@ void setup() {
   }
   
   tft.setRotation(2);
-  bmpDraw("payment.bmp", 0, -32);
+  bmpDraw("select.bmp", 0, -32);
 }
 
 void selectProduct(int value) {
@@ -91,6 +91,30 @@ void selectProduct(int value) {
       
       selection = 4;
   }
+
+  drawImage("payment.bmp");
+}
+
+void selectPaymentOption(int value) {
+  if (value > 570) {
+    drawImage("failure.bmp");
+  } else if (value > 0) {
+    drawImage("nfc.bmp");
+  }
+}
+
+void drawImage(char *image) {
+  tft.begin(ID);
+  tft.fillScreen(0x0000);
+  bmpDraw(image, 0, 0);
+}
+
+void showStatus(bool success) {
+  if (success) {
+    drawImage("success.bmp");
+  } else {
+    drawImage("failure.bmp");
+  }
 }
 
 void loop()
@@ -102,42 +126,45 @@ void loop()
       case 1:
         selectProduct(tp.y);
         mode = 2;
-        bmpDraw("payment.bmp", 0, -32);
         break;
 
       case 2:
-        Serial.println("here");
-        break;
-        
-      default:
-        Serial.println("fak");
+        selectPaymentOption(tp.y);
+        mode = 3;
         break;
     }
   }
+  
+  switch(mode) {
+    case 0:
+      drawImage("select.bmp");
+      mode = 1;
+      break;
+
+    case 3:
+      delay(3000);
+      showStatus(true);
+      delay(3000);
+      mode = 0;
+      break;
+  }
 }
 
-// This function opens a Windows Bitmap (BMP) file and
-// displays it at the given coordinates.  It's sped up
-// by reading many pixels worth of data at a time
-// (rather than pixel by pixel).  Increasing the buffer
-// size takes more of the Arduino's precious RAM but
-// makes loading a little faster.	20 pixels seems a
-// good balance.
-
+// Define how many pixels should be loaded at the same time
 #define BUFFPIXEL 20
 
 void bmpDraw(char *filename, int x, int y) {
-  File 	bmpFile;
-  int		bmpWidth, bmpHeight;   // W+H in pixels
-  uint8_t	bmpDepth;			   // Bit depth (currently must be 24)
-  uint32_t bmpImageoffset; 	   // Start of image data in file
-  uint32_t rowSize;			   // Not always = bmpWidth; may have padding
-  uint8_t	sdbuffer[3 * BUFFPIXEL]; // pixel in buffer (R+G+B per pixel)
-  uint16_t lcdbuffer[BUFFPIXEL];  // pixel out buffer (16-bit per pixel)
+  File bmpFile;
+  int bmpWidth, bmpHeight;            // W+H in pixels
+  uint8_t	bmpDepth;			              // Bit depth (currently must be 24)
+  uint32_t bmpImageoffset; 	          // Start of image data in file
+  uint32_t rowSize;			              // Not always = bmpWidth; may have padding
+  uint8_t	sdbuffer[3 * BUFFPIXEL];    // pixel in buffer (R+G+B per pixel)
+  uint16_t lcdbuffer[BUFFPIXEL];      // pixel out buffer (16-bit per pixel)
   uint8_t	buffidx = sizeof(sdbuffer); // Current position in sdbuffer
-  boolean	goodBmp = false;	   // Set to true on valid header parse
-  boolean	flip	= true; 	   // BMP is stored bottom-to-top
-  int		w, h, row, col;
+  boolean	goodBmp = false;	          // Set to true on valid header parse
+  boolean	flip	= true; 	            // BMP is stored bottom-to-top
+  int w, h, row, col;
   uint8_t	r, g, b;
   uint32_t pos = 0, startTime = millis();
   uint8_t	lcdidx = 0;
