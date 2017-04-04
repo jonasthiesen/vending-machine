@@ -13,13 +13,12 @@ MCUFRIEND_kbv tft;
 #endif
 
 File root;
-char namebuf[32] = "select.bmp";
 int pathlen;
 uint8_t spi_save;
-uint8_t YP = A1;  // must be an analog pin, use "An" notation!
-uint8_t XM = A2;  // must be an analog pin, use "An" notation!
-uint8_t YM = 7;   // can be a digital pin
-uint8_t XP = 6;   // can be a digital pin
+uint8_t YP = A1;
+uint8_t XM = A2;
+uint8_t YM = 7;
+uint8_t XP = 6;
 uint8_t SwapXY = 0;
 
 uint16_t TS_LEFT = 880;
@@ -33,7 +32,6 @@ TSPoint tp;
 
 #define MINPRESSURE 20
 #define MAXPRESSURE 1000
-
 #define SWAP(a, b) { uint16_t tmp = a; a = b; b = tmp; }
 
 int16_t BOXSIZE;
@@ -75,32 +73,17 @@ void setup() {
 }
 
 void selectProduct(int value) {
-  if (value > 775) {
-    
-      selection = 1;
-      
-  } else if (value > 570) {
-    
-      selection = 2;
-      
-  } else if (value > 350) {
-      
-      selection = 3;
-      
-  } else if (value > 0) {
-      
-      selection = 4;
-  }
+  if (value > 775)      selection = 1;
+  else if (value > 570) selection = 2;
+  else if (value > 350) selection = 3;
+  else if (value > 0)   selection = 4;
 
   drawImage("payment.bmp");
 }
 
 void selectPaymentOption(int value) {
-  if (value > 570) {
-    drawImage("failure.bmp");
-  } else if (value > 0) {
-    drawImage("nfc.bmp");
-  }
+  if (value > 570)    drawImage("failure.bmp");
+  else if (value > 0) drawImage("nfc.bmp");
 }
 
 void drawImage(char *image) {
@@ -110,11 +93,8 @@ void drawImage(char *image) {
 }
 
 void showStatus(bool success) {
-  if (success) {
-    drawImage("success.bmp");
-  } else {
-    drawImage("failure.bmp");
-  }
+  if (success) drawImage("success.bmp");
+  else         drawImage("failure.bmp");
 }
 
 void loop()
