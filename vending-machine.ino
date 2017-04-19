@@ -3,6 +3,7 @@
 #include <Adafruit_GFX.h>     
 #include <MCUFRIEND_kbv.h>
 #include <TouchScreen.h>
+#include <Wire.h>
 
 MCUFRIEND_kbv tft;
 #define SD_CS 5
@@ -40,7 +41,8 @@ uint16_t identifier, oldcolor, currentcolor;
 uint8_t Orientation = 0; //PORTRAIT
 
 int mode = 1;
-int selection;
+byte selection;
+int prices[4] = {15, 15, 20, 12};
 
 uint16_t ID;
 uint16_t tmp;
@@ -50,7 +52,9 @@ void setup() {
   pinMode(YP, OUTPUT);
   pinMode(XP, OUTPUT);
   pinMode(YM, OUTPUT);
-  
+
+  Wire.begin(8);
+  Wire.onReceive(receiveEvent);
   Serial.begin(9600);
   Serial.print("Show BMP files on TFT with ID:0x");
   ID = tft.readID();
@@ -69,36 +73,10 @@ void setup() {
   }
   
   tft.setRotation(2);
-  bmpDraw("select.bmp", 5, -32);
+  bmpDraw("select.bmp", 0, -32);
 }
 
-void selectProduct(int value) {
-  if (value > 775)      selection = 1;
-  else if (value > 570) selection = 2;
-  else if (value > 350) selection = 3;
-  else if (value > 0)   selection = 4;
-
-  drawImage("payment.bmp");
-}
-
-void selectPaymentOption(int value) {
-  if (value > 570)    drawImage("failure.bmp");
-  else if (value > 0) drawImage("nfc.bmp");
-}
-
-void drawImage(char *image) {
-  tft.begin(ID);
-  tft.fillScreen(0x0000);
-  bmpDraw(image, 5, 0);
-}
-
-void showStatus(bool success) {
-  if (success) drawImage("success.bmp");
-  else         drawImage("failure.bmp");
-}
-
-void loop()
-{
+void loop() {
   tp = ts.getPoint();
       
   if (tp.z > MINPRESSURE && tp.z < MAXPRESSURE) {
@@ -110,7 +88,7 @@ void loop()
 
       case 2:
         selectPaymentOption(tp.y);
-        mode = 3;
+        mode = 100;
         break;
     }
   }
@@ -128,6 +106,63 @@ void loop()
       mode = 0;
       break;
   }
+}
+
+void selectProduct(int value) {
+  if (value > 775)      selection = 0;
+  else if (value > 570) selection = 1;
+  else if (value > 350) selection = 2;
+  else if (value > 0)   selection = 3;
+
+  sendToArduino(selection);
+
+  drawImage("payment.bmp");
+}
+
+void receiveEvent() {
+  int amount = Wire.read();
+
+  if (amount > 9) {
+    writeText(String(amount), 8, 75, 200);
+  } else {
+    writeText(String(amount), 8, 102, 200);
+  }
+}
+
+void selectPaymentOption(int value) {
+  if (value > 570) {
+    drawImage("twix.bmp");
+
+    writeText(String(prices[selection]), 8, 75, 200);
+    writeText("DKK", 3, 97, 290);
+  }
+  else if (value > 0) drawImage("nfc.bmp");
+}
+
+void writeText(String text, int size, int x, int y) {
+  tft.begin(ID);
+  tft.setCursor(x, y);
+  tft.setTextColor(0xFFFF);
+  tft.setTextSize(size);
+  tft.fillRect(0, y - 10, 240, 80, 0x2945);
+  tft.println(text);
+}
+
+void drawImage(char *image) {
+  tft.begin(ID);
+  tft.fillScreen(0x2945);
+  bmpDraw(image, 0, 0);
+}
+
+void showStatus(bool success) {
+  if (success) drawImage("success.bmp");
+  else         drawImage("failure.bmp");
+}
+
+void sendToArduino(byte msg) {
+  Wire.beginTransmission(8);
+  Wire.write(msg);
+  Wire.endTransmission();
 }
 
 #define BUFFPIXEL 20
