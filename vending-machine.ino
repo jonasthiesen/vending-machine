@@ -40,9 +40,16 @@ int16_t PENRADIUS = 3;
 uint16_t identifier, oldcolor, currentcolor;
 uint8_t Orientation = 0; //PORTRAIT
 
+/*
+ * 
+ * Project specific
+ * 
+ */
+
 int mode = 1;
 byte selection;
 int prices[4] = {15, 15, 20, 12};
+char *products[4] = {"snickers.bmp", "twix.bmp", "haribo.bmp", "skittles.bmp"};
 
 uint16_t ID;
 uint16_t tmp;
@@ -55,15 +62,19 @@ void setup() {
 
   Wire.begin(8);
   Wire.onReceive(receiveEvent);
+  
   Serial.begin(9600);
   Serial.print("Show BMP files on TFT with ID:0x");
+  
   ID = tft.readID();
+  
   Serial.println(ID, HEX);
+  
   if (ID == 0x0D3D3) ID = 0x9481;
+  
   tft.begin(ID);
   tft.fillScreen(0x0000);
-
-  // constructor
+  
   ts = TouchScreen(XP, YP, XM, YM, 300);
   
   bool good = SD.begin(SD_CS);
@@ -131,7 +142,7 @@ void receiveEvent() {
 
 void selectPaymentOption(int value) {
   if (value > 570) {
-    drawImage("twix.bmp");
+    drawImage(products[selection]);
 
     writeText(String(prices[selection]), 8, 75, 200);
     writeText("DKK", 3, 97, 290);
@@ -164,6 +175,12 @@ void sendToArduino(byte msg) {
   Wire.write(msg);
   Wire.endTransmission();
 }
+
+/*
+ * 
+ * TFT Library
+ * 
+ */
 
 #define BUFFPIXEL 20
 
