@@ -171,7 +171,7 @@ void showStatus(bool success) {
 }
 
 void sendToArduino(byte msg) {
-  Wire.beginTransmission(8);
+  Wire.beginTransmission(9);
   Wire.write(msg);
   Wire.endTransmission();
 }
