@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include <SD.h>
-#include <Adafruit_GFX.h>     
+#include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
 #include <TouchScreen.h>
 #include <Wire.h>
@@ -51,6 +51,9 @@ byte selection;
 int prices[4] = {15, 15, 20, 12};
 char *products[4] = {"snickers.bmp", "twix.bmp", "haribo.bmp", "skittles.bmp"};
 
+int totalPrice = 0;
+int paymentOption;
+
 uint16_t ID;
 uint16_t tmp;
 
@@ -99,7 +102,7 @@ void loop() {
 
       case 2:
         selectPaymentOption(tp.y);
-        mode = 100;
+        mode = 3;
         break;
     }
   }
@@ -111,10 +114,17 @@ void loop() {
       break;
 
     case 3:
-      delay(3000);
-      showStatus(true);
-      delay(3000);
-      mode = 0;
+      if (paymentOption == 1 && totalPrice <= 0) {
+        showStatus(true);
+        delay(3000);
+        mode = 0;
+      } else if (paymentOption == 2) {
+        delay(3000);
+        showStatus(true);
+        delay(3000);
+        mode = 0;
+      }
+      
       break;
   }
 }
@@ -133,10 +143,14 @@ void selectProduct(int value) {
 void receiveEvent() {
   int amount = Wire.read();
 
+  Serial.println(amount);
+
+  totalPrice -= amount;
+  
   if (amount > 9) {
-    writeText(String(amount), 8, 75, 200);
+    writeText(String(totalPrice), 8, 75, 200);
   } else {
-    writeText(String(amount), 8, 102, 200);
+    writeText(String(totalPrice), 8, 102, 200);
   }
 }
 
@@ -144,10 +158,16 @@ void selectPaymentOption(int value) {
   if (value > 570) {
     drawImage(products[selection]);
 
+    totalPrice = prices[selection];
+
     writeText(String(prices[selection]), 8, 75, 200);
     writeText("DKK", 3, 97, 290);
+
+    paymentOption = 1;
+  } else if (value > 0) {
+    drawImage("nfc.bmp");
+    paymentOption = 2;
   }
-  else if (value > 0) drawImage("nfc.bmp");
 }
 
 void writeText(String text, int size, int x, int y) {
@@ -166,8 +186,12 @@ void drawImage(char *image) {
 }
 
 void showStatus(bool success) {
-  if (success) drawImage("success.bmp");
-  else         drawImage("failure.bmp");
+  if (success) {
+    sendToArduino(selection);
+    drawImage("success.bmp");
+  } else {
+    drawImage("failure.bmp");
+  }
 }
 
 void sendToArduino(byte msg) {
